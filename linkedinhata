@@ -1,0 +1,95 @@
+<?php
+
+
+
+namespace App\Http\Controllers;
+
+
+
+use Illuminate\Http\Request;
+
+use Socialite;
+
+use Illuminate\Support\Facades\Redirect;
+
+use Illuminate\Support\Facades\Auth;
+
+
+
+
+
+class LinkedinController extends Controller
+
+{
+
+	public function redirectToProvider()
+
+    {
+
+        return Socialite::driver('linkedin')->redirect();
+
+    }
+
+
+
+    public function handleProviderCallback(Request $request)
+
+    {
+
+
+
+        $user = Socialite::with('linkedin')->user();
+
+
+
+        $isUser = \App\Models\User::where('email' , $user->email)->orderBy('id', 'DESC')->first();
+
+
+
+        if($isUser == null){
+
+            $last = \App\Models\User::where('deleted_at' , null)->orderBy('id', 'DESC')->first();
+
+
+
+            $newUser = new \App\Models\User;
+
+            $newUser->group = 1;
+
+
+
+            $newUser->id = $last->id + 1;
+
+            $newUser->email = $user->email;
+
+            $newUser->name = $user->name;
+
+            $newUser->facebook_id = $user->id;
+
+            $newUser->password = bcrypt($user->name);
+
+            $newUser->save();
+
+
+
+            Auth::attempt(['email' => $user->email, 'password' => $user->name]);
+
+            return redirect('http://kargakarga.com/profile/'.$newUser->id);
+
+
+
+        }else{
+
+            Auth::attempt(['email' => $user->email, 'password' => $user->name]);
+
+            return redirect('http://kargakarga.com/profile/'.$isUser->id);
+
+
+
+        }
+
+    }
+
+
+
+}
